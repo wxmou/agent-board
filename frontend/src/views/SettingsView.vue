@@ -105,7 +105,10 @@
               <div class="card-title">MCP 接入</div>
               <div class="card-sub">Streamable HTTP · JSON-RPC 2.0</div>
             </div>
-            <span class="badge badge-teal">HTTP</span>
+            <div class="flex items-center gap-6">
+              <RouterLink v-if="isAdmin" to="/keys" class="btn btn-secondary btn-sm"><KeyRound :size="13" /> 管理 Keys</RouterLink>
+              <span class="badge badge-teal">HTTP</span>
+            </div>
           </div>
           <div class="card-body">
             <div class="field">
@@ -119,10 +122,10 @@
             <div class="field mt-16">
               <label class="field-label">认证 Header</label>
               <div class="copy-row">
-                <input class="input" readonly value="Authorization: Bearer <AGENT_BOARD_TOKEN>" />
-                <button class="icon-btn" type="button" title="复制" @click="copy('Authorization: Bearer <AGENT_BOARD_TOKEN>', '认证 Header')"><Copy :size="16" /></button>
+                <input class="input" readonly value="Authorization: Bearer <MCP_KEY>" />
+                <button class="icon-btn" type="button" title="复制" @click="copy('Authorization: Bearer <MCP_KEY>', '认证 Header')"><Copy :size="16" /></button>
               </div>
-              <span class="field-hint">每个 Token 在服务端绑定唯一 Agent 身份。不要将 Token 写入浏览器地址或公开仓库。</span>
+              <span class="field-hint">推荐在「MCP Keys」中为每个开发者 Agent 创建独立 Key。Key 只对 /mcp 有效，不要写入浏览器地址或公开仓库。</span>
             </div>
 
             <div class="field mt-16">
@@ -259,6 +262,7 @@ import {
   Copy,
   Download,
   Info,
+  KeyRound,
   List,
   LogOut,
   MessageSquarePlus,
@@ -273,7 +277,7 @@ import {
   Trash2,
 } from 'lucide-vue-next'
 import type { ArchivePolicy } from '@/lib/types'
-import { api, formatBytes, formatDate, initials, timeAgo } from '@/lib/api'
+import { api, copyText, formatBytes, initials, timeAgo } from '@/lib/api'
 import { errorMessage, logout, notify, onStream, refreshCore, state } from '@/stores/board'
 
 const saving = ref(false)
@@ -315,7 +319,7 @@ const clientConfig = computed(() => JSON.stringify({
     'agent-board': {
       type: 'http',
       url: mcpURL.value,
-      headers: { Authorization: 'Bearer <AGENT_BOARD_TOKEN>' },
+      headers: { Authorization: 'Bearer <MCP_KEY>' },
     },
   },
 }, null, 2))
@@ -345,6 +349,10 @@ const routes = [
   { method: 'POST', path: '/api/v1/messages/:id/lock', desc: '获取编辑租约' },
   { method: 'GET', path: '/api/v1/stream', desc: 'SSE 实时事件流' },
   { method: 'GET', path: '/api/v1/stats', desc: 'Dashboard 聚合统计' },
+  { method: 'GET', path: '/api/v1/mcp-keys', desc: '列出 MCP Keys（管理员）' },
+  { method: 'POST', path: '/api/v1/mcp-keys', desc: '创建 MCP Key（管理员）' },
+  { method: 'DELETE', path: '/api/v1/mcp-keys/:id', desc: '撤销 MCP Key（管理员）' },
+  { method: 'POST', path: '/api/v1/mcp-keys/:id/rotate', desc: '轮换 MCP Key（管理员）' },
   { method: 'POST', path: '/api/v1/archive/run', desc: '手动运行归档（管理员）' },
 ]
 
@@ -416,10 +424,9 @@ async function exportData() {
 }
 
 async function copy(value: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(value)
+  if (await copyText(value)) {
     notify('success', `${label}已复制`)
-  } catch {
+  } else {
     notify('error', '复制失败', '浏览器不允许访问剪贴板')
   }
 }
@@ -433,10 +440,15 @@ function auditLabel(type: string) {
     'message.restored': '恢复留言',
     'archive.run': '运行归档',
     'policy.updated': '更新策略',
+    'mcp_key.created': '创建 MCP Key',
+    'mcp_key.revoked': '撤销 MCP Key',
+    'mcp_key.rotated': '轮换 MCP Key',
   } as Record<string, string>)[type] || type
 }
 
 function eventClass(type: string) {
+  if (type === 'mcp_key.revoked') return 'rose'
+  if (type.startsWith('mcp_key.')) return 'amber'
   if (type.includes('deleted') || type.includes('archived')) return 'rose'
   if (type.includes('updated')) return 'blue'
   if (type.includes('policy') || type.includes('archive')) return 'amber'
@@ -447,7 +459,7 @@ onMounted(async () => {
   await refreshCore()
   syncForm(state.policy)
   unsubscribe = onStream((event) => {
-    if (event.type === 'stream.reconnected' || event.type === 'policy.updated' || event.type === 'archive.run') refreshCore()
+    if (event.type === 'stream.reconnected' || event.type === 'policy.updated' || event.type === 'archive.run' || event.type.startsWith('mcp_key.')) refreshCore()
   })
   if (window.location.hash === '#mcp') {
     setTimeout(() => document.getElementById('mcp')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)

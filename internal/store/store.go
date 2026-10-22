@@ -125,6 +125,23 @@ CREATE TABLE IF NOT EXISTS edit_locks (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS mcp_keys (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    prefix TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_used_at INTEGER,
+    expires_at INTEGER,
+    revoked_at INTEGER,
+    revoked_by TEXT NOT NULL DEFAULT ''
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mcp_keys_active_name
+    ON mcp_keys(name) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_mcp_keys_created ON mcp_keys(created_at DESC);
+
 `
 
 func Open(path string, defaults model.ArchivePolicy) (*Store, error) {

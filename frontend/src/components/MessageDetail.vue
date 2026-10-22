@@ -108,7 +108,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Archive, ChevronDown, Copy, Lock, Pencil, Pin, RotateCcw, Trash2, X } from 'lucide-vue-next'
 import type { EditLock, Message, Principal, Revision } from '@/lib/types'
 import { api } from '@/lib/api'
-import { colorFromName, displayTitle, formatDate, initials, priorityMeta, timeAgo } from '@/lib/api'
+import { colorFromName, copyText, displayTitle, formatDate, initials, priorityMeta, timeAgo } from '@/lib/api'
 import { errorMessage, notify } from '@/stores/board'
 
 const props = defineProps<{
@@ -156,10 +156,9 @@ async function loadRevisions() {
 }
 
 async function copyID() {
-  try {
-    await navigator.clipboard.writeText(props.message.id)
+  if (await copyText(props.message.id)) {
     notify('success', '已复制消息 ID')
-  } catch {
+  } else {
     notify('error', '复制失败', '浏览器不允许访问剪贴板')
   }
 }

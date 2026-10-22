@@ -159,3 +159,54 @@ func TestCursorPagination(t *testing.T) {
 		t.Fatalf("unexpected second page: %+v", page2)
 	}
 }
+
+func TestMCPKeyLifecycle(t *testing.T) {
+	st := testStore(t)
+	ctx := context.Background()
+	created, err := st.CreateMCPKey(ctx, model.CreateMCPKeyInput{
+		Name: "dev-alice", Role: "writer", ExpiresDays: 30,
+	}, "admin")
+	if err != nil {
+		t.Fatalf("create key: %v", err)
+	}
+	if created.Key == "" || created.Record.Prefix == "" || created.Record.Status != "active" {
+		t.Fatalf("invalid created key: %+v", created)
+	}
+	if _, err := st.CreateMCPKey(ctx, model.CreateMCPKeyInput{Name: "dev-alice", Role: "writer"}, "admin"); !errors.Is(err, ErrKeyNameTaken) {
+		t.Fatalf("expected duplicate name error, got %v", err)
+	}
+	key, ok, err := st.AuthenticateMCPKey(ctx, created.Key)
+	if err != nil || !ok || key.Name != "dev-alice" || key.Role != "writer" {
+		t.Fatalf("authenticate key: ok=%v key=%+v err=%v", ok, key, err)
+	}
+	keys, err := st.ListMCPKeys(ctx)
+	if err != nil || len(keys) != 1 {
+		t.Fatalf("list keys: %v %+v", err, keys)
+	}
+	if _, ok, _ := st.AuthenticateMCPKey(ctx, "ab_mcp_invalid"); ok {
+		t.Fatal("invalid key authenticated")
+	}
+	revoked, err := st.RevokeMCPKey(ctx, created.Record.ID, "admin")
+	if err != nil || revoked.Status != "revoked" {
+		t.Fatalf("revoke: %+v %v", revoked, err)
+	}
+	if _, ok, _ := st.AuthenticateMCPKey(ctx, created.Key); ok {
+		t.Fatal("revoked key authenticated")
+	}
+}
+
+func TestExpiredMCPKey(t *testing.T) {
+	st := testStore(t)
+	ctx := context.Background()
+	created, err := st.CreateMCPKey(ctx, model.CreateMCPKeyInput{Name: "dev-expired", Role: "writer", ExpiresDays: 1}, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().UTC().Add(-time.Hour).UnixMilli()
+	if _, err := st.DB().ExecContext(ctx, "UPDATE mcp_keys SET expires_at=? WHERE id=?", past, created.Record.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := st.AuthenticateMCPKey(ctx, created.Key); ok {
+		t.Fatal("expired key authenticated")
+	}
+}

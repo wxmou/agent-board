@@ -99,7 +99,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ArrowRight, Bot, Copy, Lock, Plug, RefreshCw, Search, X } from 'lucide-vue-next'
 import type { AgentSummary, StreamEvent } from '@/lib/types'
-import { initials, timeAgo } from '@/lib/api'
+import { copyText, initials, timeAgo } from '@/lib/api'
 import { notify, onStream, refreshCore, state } from '@/stores/board'
 
 const search = ref('')
@@ -149,10 +149,10 @@ async function refresh() {
 }
 
 function copyFormat() {
-  navigator.clipboard.writeText('AGENT_BOARD_TOKENS="agent-x:writer:<secret>"').then(
-    () => notify('success', '格式已复制', '请将 <secret> 替换为强随机 Token'),
-    () => notify('error', '复制失败'),
-  )
+  copyText('AGENT_BOARD_TOKENS="agent-x:writer:<secret>"').then((ok) => {
+    if (ok) notify('success', '格式已复制', '请将 <secret> 替换为强随机 Token')
+    else notify('error', '复制失败')
+  })
 }
 
 function onEvent(event: StreamEvent) {

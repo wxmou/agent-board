@@ -252,7 +252,7 @@ import MessageDetail from '@/components/MessageDetail.vue'
 import Modal from '@/components/Modal.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import type { Message, MessageList, StreamEvent } from '@/lib/types'
-import { api, colorFromName, displayTitle, excerpt, initials, queryString, timeAgo } from '@/lib/api'
+import { api, copyText, displayTitle, excerpt, initials, queryString, timeAgo } from '@/lib/api'
 import { errorMessage, notify, onStream, refreshCore, refreshStatsSoon, state } from '@/stores/board'
 
 const route = useRoute()
@@ -516,10 +516,10 @@ async function openFromQuery() {
 }
 
 function copyMCP() {
-  navigator.clipboard.writeText(mcpURL.value).then(
-    () => notify('success', 'MCP 地址已复制'),
-    () => notify('error', '复制失败'),
-  )
+  copyText(mcpURL.value).then((ok) => {
+    if (ok) notify('success', 'MCP 地址已复制')
+    else notify('error', '复制失败', '请手动选中文本复制')
+  })
 }
 
 watch(search, () => {

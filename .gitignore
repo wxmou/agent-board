@@ -3,9 +3,10 @@ data/
 frontend/node_modules/
 frontend/dist/
 /screenshots/
-dist/
+/dist/
 agentboard
 agentboard.exe
+agentboard.exe~
 *.log
 *.db
 *.db-wal

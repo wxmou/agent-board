@@ -103,7 +103,7 @@ server {
 
 ```bash
 cd frontend && npm ci && npm run build && cd ..
-CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=1.0.0" -o agentboard ./cmd/agentboard
+CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=1.1.0" -o agentboard ./cmd/agentboard
 
 APP_ENV=production \
 AGENT_BOARD_ADDR=127.0.0.1:8080 \

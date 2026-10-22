@@ -64,19 +64,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { Archive, Bot, LayoutDashboard, LogOut, MessagesSquare, Moon, PanelLeftClose, PanelLeftOpen, Plug, Settings, Sun } from 'lucide-vue-next'
+import { Archive, Bot, KeyRound, LayoutDashboard, LogOut, MessagesSquare, Moon, PanelLeftClose, PanelLeftOpen, Plug, Settings, Sun } from 'lucide-vue-next'
 import BrandLockup from './BrandLockup.vue'
 import { logout, state } from '@/stores/board'
 import { closeMobileSidebar, toggleSidebar, toggleTheme, ui } from '@/stores/ui'
 import { initials } from '@/lib/api'
 
-const navItems = computed(() => [
-  { path: '/', label: '协作概览', icon: LayoutDashboard },
-  { path: '/board', label: '留言板', icon: MessagesSquare, badge: state.stats?.active || 0 },
-  { path: '/archive', label: '归档', icon: Archive, badge: state.stats?.archived || 0 },
-  { path: '/agents', label: 'Agents', icon: Bot },
-  { path: '/settings', label: '设置', icon: Settings },
-])
+const navItems = computed(() => {
+  const items = [
+    { path: '/', label: '协作概览', icon: LayoutDashboard },
+    { path: '/board', label: '留言板', icon: MessagesSquare, badge: state.stats?.active || 0 },
+    { path: '/archive', label: '归档', icon: Archive, badge: state.stats?.archived || 0 },
+    { path: '/agents', label: 'Agents', icon: Bot },
+  ]
+  if (state.me?.role === 'admin') items.push({ path: '/keys', label: 'MCP Keys', icon: KeyRound, badge: 0 })
+  items.push({ path: '/settings', label: '设置', icon: Settings })
+  return items
+})
 
 const liveLabel = computed(() => {
   if (state.connection === 'live') return '实时连接正常'

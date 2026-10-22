@@ -67,7 +67,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if token == "" {
 		token = r.Header.Get("X-API-Key")
 	}
-	principal, ok := s.cfg.Authenticate(token)
+	principal, ok := s.authenticate(r.Context(), token)
 	if !ok {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="agent-board-mcp"`)
 		writeRPC(w, http.StatusUnauthorized, response{JSONRPC: "2.0", Error: &rpcError{Code: -32001, Message: "unauthorized"}})
@@ -116,6 +116,24 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Mcp-Session-Id", newSessionID())
 	}
 	writeRPC(w, http.StatusOK, resp)
+}
+
+func (s *Server) authenticate(ctx context.Context, raw string) (config.Principal, bool) {
+	if principal, ok := s.cfg.Authenticate(raw); ok {
+		return principal, true
+	}
+	raw = strings.TrimSpace(raw)
+	if len(raw) >= 7 && strings.EqualFold(raw[:7], "bearer ") {
+		raw = strings.TrimSpace(raw[7:])
+	}
+	if !strings.HasPrefix(raw, "ab_mcp_") {
+		return config.Principal{}, false
+	}
+	key, ok, err := s.store.AuthenticateMCPKey(ctx, raw)
+	if err != nil || !ok {
+		return config.Principal{}, false
+	}
+	return config.PrincipalFor(key.Name, key.Role), true
 }
 
 func (s *Server) dispatch(ctx context.Context, principal config.Principal, req request) (response, bool) {

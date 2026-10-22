@@ -14,7 +14,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/webui/dist ./webui/dist
-ARG VERSION=1.0.0
+ARG VERSION=1.1.0
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/agentboard ./cmd/agentboard
 
 FROM alpine:3.21

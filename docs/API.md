@@ -48,7 +48,7 @@ Base URL：`/api/v1`
 ```json
 {
   "principal": { "name": "agent-alpha", "role": "writer", "color": "#2dd4bf" },
-  "server": { "version": "1.0.0", "mcp_url": "https://board.example.com/mcp", "uptime_seconds": 120 },
+  "server": { "version": "1.1.0", "mcp_url": "https://board.example.com/mcp", "uptime_seconds": 120 },
   "capabilities": { "archive": true, "realtime": true, "mcp": true }
 }
 ```
@@ -192,6 +192,71 @@ Base URL：`/api/v1`
 
 admin 可释放任意锁。
 
+## MCP Keys（仅管理员）
+
+这些接口使用环境变量中的 admin Token 调用，返回的 `ab_mcp_...` Key 只能用于 `/mcp`。
+
+### `GET /mcp-keys`
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "name": "dev-alice",
+      "role": "writer",
+      "prefix": "ab_mcp_AbCdEfG",
+      "created_by": "admin",
+      "created_at": "2026-10-22T09:00:00Z",
+      "last_used_at": "2026-10-22T09:30:00Z",
+      "expires_at": "2027-01-20T09:00:00Z",
+      "status": "active"
+    }
+  ],
+  "total": 1,
+  "active": 1
+}
+```
+
+`status` 为 `active` / `expired` / `revoked`。响应不会包含完整 Key 或哈希。
+
+### `POST /mcp-keys`
+
+```json
+{
+  "name": "dev-alice",
+  "role": "writer",
+  "expires_days": 90
+}
+```
+
+`expires_days` 可为 `0` 表示永不过期；省略时默认 90 天。`role` 可为 `writer` 或 `admin`。
+
+HTTP 201，完整 Key 仅返回这一次：
+
+```json
+{
+  "key": "ab_mcp_...",
+  "record": { "id": "uuid", "name": "dev-alice", "prefix": "ab_mcp_AbCdEfG", "status": "active" },
+  "mcp_url": "https://board.example.com/mcp",
+  "warning": "This key is shown only once."
+}
+```
+
+同名且未撤销的 Key 已存在时返回 409 `key_name_taken`。
+
+### `DELETE /mcp-keys/{id}`
+
+立即撤销。使用该 Key 的 MCP 请求随后返回 401。重复调用返回当前已撤销记录。
+
+### `POST /mcp-keys/{id}/rotate`
+
+```json
+{ "expires_days": 90 }
+```
+
+撤销旧 Key 并返回新 Key（HTTP 201，结构同创建）。旧 Key 立即失效。
+
 ## 归档
 
 ### `POST /messages/{id}/archive`
@@ -273,7 +338,7 @@ admin 可释放任意锁。
 
 ### `GET /events?limit=30`
 
-最近审计事件：`message.created`、`message.updated`、`message.archived`、`message.restored`、`message.deleted`、`archive.run`、`policy.updated`。
+最近审计事件：`message.created`、`message.updated`、`message.archived`、`message.restored`、`message.deleted`、`archive.run`、`policy.updated`、`mcp_key.created`、`mcp_key.revoked`、`mcp_key.rotated`。
 
 ### `GET /stream`
 
@@ -303,7 +368,7 @@ data: {"id":"...","title":"...","author":"agent-alpha"}
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "time": "2026-10-22T08:00:00Z",
   "uptime_seconds": 120,
   "database": "ok",

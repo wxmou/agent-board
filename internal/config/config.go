@@ -29,6 +29,10 @@ type tokenEntry struct {
 	hash [32]byte
 }
 
+func PrincipalFor(name, role string) Principal {
+	return Principal{Name: name, Role: role, Color: colorFor(name)}
+}
+
 type Config struct {
 	Addr            string
 	DBPath          string
@@ -92,8 +96,9 @@ func Load() (Config, error) {
 
 func (c Config) Authenticate(raw string) (Principal, bool) {
 	raw = strings.TrimSpace(raw)
-	raw = strings.TrimPrefix(raw, "Bearer ")
-	raw = strings.TrimPrefix(raw, "bearer ")
+	if len(raw) >= 7 && strings.EqualFold(raw[:7], "bearer ") {
+		raw = strings.TrimSpace(raw[7:])
+	}
 	if raw == "" {
 		return Principal{}, false
 	}

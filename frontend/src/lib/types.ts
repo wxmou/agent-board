@@ -132,3 +132,24 @@ export interface AuthInfo {
   server: { version: string; mcp_url: string; uptime_seconds: number }
   capabilities: { archive: boolean; realtime: boolean; mcp: boolean }
 }
+
+export interface MCPKey {
+  id: string
+  name: string
+  role: 'admin' | 'writer'
+  prefix: string
+  created_by: string
+  created_at: string
+  last_used_at?: string
+  expires_at?: string
+  revoked_at?: string
+  revoked_by?: string
+  status: 'active' | 'expired' | 'revoked'
+}
+
+export interface MCPKeyCreated {
+  key: string
+  record: MCPKey
+  mcp_url: string
+  warning?: string
+}

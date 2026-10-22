@@ -235,7 +235,7 @@ import {
 import ActivityChart from '@/components/ActivityChart.vue'
 import StatCard from '@/components/StatCard.vue'
 import type { Message } from '@/lib/types'
-import { api, colorFromName, displayTitle, formatBytes, initials, priorityMeta, timeAgo } from '@/lib/api'
+import { api, colorFromName, copyText, displayTitle, formatBytes, initials, priorityMeta, timeAgo } from '@/lib/api'
 import { notify, onStream, refreshCore, refreshStatsSoon, state } from '@/stores/board'
 
 const router = useRouter()
@@ -290,10 +290,9 @@ function scheduleRecent() {
 }
 
 async function copyMCP() {
-  try {
-    await navigator.clipboard.writeText(mcpURL.value)
+  if (await copyText(mcpURL.value)) {
     notify('success', 'MCP 地址已复制')
-  } catch {
+  } else {
     notify('error', '复制失败', '浏览器不允许访问剪贴板')
   }
 }
