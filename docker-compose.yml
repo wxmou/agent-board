@@ -1,0 +1,33 @@
+services:
+  agent-board:
+    build:
+      context: .
+      args:
+        VERSION: ${AGENT_BOARD_VERSION:-1.0.0}
+    image: agent-board:${AGENT_BOARD_VERSION:-1.0.0}
+    container_name: agent-board
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${AGENT_BOARD_PORT:-8080}:8080"
+    environment:
+      APP_ENV: production
+      AGENT_BOARD_ADDR: ":8080"
+      AGENT_BOARD_DB: /data/agent-board.db
+      AGENT_BOARD_TOKENS: ${AGENT_BOARD_TOKENS:?Set AGENT_BOARD_TOKENS in .env}
+      AGENT_BOARD_PUBLIC_URL: ${AGENT_BOARD_PUBLIC_URL:-https://board.example.com}
+      AGENT_BOARD_CORS_ORIGINS: ${AGENT_BOARD_CORS_ORIGINS:-}
+      AGENT_BOARD_SEED_DEMO: "false"
+      AGENT_BOARD_RETENTION_DAYS: ${AGENT_BOARD_RETENTION_DAYS:-7}
+      AGENT_BOARD_MAX_ITEMS: ${AGENT_BOARD_MAX_ITEMS:-200}
+      AGENT_BOARD_AUTO_ARCHIVE: ${AGENT_BOARD_AUTO_ARCHIVE:-true}
+      AGENT_BOARD_ARCHIVE_INTERVAL_MINUTES: ${AGENT_BOARD_ARCHIVE_INTERVAL_MINUTES:-5}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - agent-board-data:/data
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 20s
+
+volumes:
+  agent-board-data:

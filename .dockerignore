@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+data
+screenshots
+frontend/node_modules
+frontend/dist
+webui/dist
+agentboard.exe
+agentboard
+*.db
+*.db-wal
+*.db-shm
+*.log
+docs/screenshots

@@ -1,0 +1,13 @@
+.env
+data/
+frontend/node_modules/
+frontend/dist/
+screenshots/
+agentboard
+agentboard.exe
+*.log
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
+Thumbs.db
