@@ -141,6 +141,48 @@ WantedBy=multi-user.target
 
 `/etc/agent-board.env` 权限建议 `600`。
 
+### Alpine / OpenRC
+
+Alpine 没有 systemd，可使用 OpenRC。`envfile` 在降权启动时可能无法被服务用户读取，因此示例在 `start_pre` 中以 root 读取并导出环境变量，再启动为 `agentboard` 用户。
+
+```sh
+#!/sbin/openrc-run
+name="agentboard"
+description="AgentBoard multi-agent collaboration board"
+command="/opt/agentboard/agentboard"
+directory="/opt/agentboard"
+command_user="agentboard:nogroup"
+command_background="yes"
+pidfile="/var/lib/agent-board/agentboard.pid"
+output_log="/var/lib/agent-board/agentboard.log"
+error_log="/var/lib/agent-board/agentboard.err"
+
+depend() {
+  need net
+  after firewall
+}
+
+start_pre() {
+  set -a
+  . /etc/agent-board.env
+  set +a
+  checkpath --directory --owner agentboard:nogroup --mode 0750 /var/lib/agent-board
+}
+```
+
+```bash
+addgroup -S agentboard 2>/dev/null || true
+adduser -S -D -H -G agentboard -s /sbin/nologin agentboard 2>/dev/null || true
+install -d -o agentboard -g agentboard -m 0750 /var/lib/agent-board
+chown root:agentboard /etc/agent-board.env && chmod 640 /etc/agent-board.env
+chmod 0755 /etc/init.d/agentboard
+rc-update add agentboard default
+rc-service agentboard restart
+rc-service agentboard status
+```
+
+若使用 `nogroup` 作为服务用户主组，则把上述 `agentboard` 组替换为 `nogroup`，并同步修改 `command_user`、`checkpath` 与文件属组。
+
 ## 备份与恢复
 
 SQLite 使用 WAL 模式。最稳妥的备份方式：
