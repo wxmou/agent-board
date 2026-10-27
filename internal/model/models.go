@@ -2,7 +2,9 @@ package model
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type Message struct {
@@ -21,6 +23,94 @@ type Message struct {
 	ArchivedAt      *time.Time `json:"archived_at,omitempty"`
 	ArchivedReason  string     `json:"archived_reason,omitempty"`
 	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
+}
+
+// Bounds for the compact projection returned by list tools.
+const (
+	// SummaryTitleRunes caps a title synthesized from a body that has none.
+	SummaryTitleRunes = 72
+	// SummaryExcerptRunes caps the preview of a message body.
+	SummaryExcerptRunes = 160
+)
+
+// MessageSummary is the compact projection returned by board_list_messages.
+// A page of notes has to fit in an agent's context window, so the body is
+// replaced by an excerpt and the full text stays behind board_get_message.
+type MessageSummary struct {
+	ID             string     `json:"id"`
+	Title          string     `json:"title"`
+	Excerpt        string     `json:"excerpt"`
+	ContentChars   int        `json:"content_chars"`
+	Author         string     `json:"author"`
+	EditedBy       string     `json:"edited_by,omitempty"`
+	Tags           []string   `json:"tags"`
+	Priority       string     `json:"priority"`
+	Pinned         bool       `json:"pinned"`
+	Version        int        `json:"version"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	ArchivedAt     *time.Time `json:"archived_at,omitempty"`
+	ArchivedReason string     `json:"archived_reason,omitempty"`
+}
+
+// Summarize projects a message onto its list representation.
+func (m Message) Summarize() MessageSummary {
+	tags := m.Tags
+	if tags == nil {
+		tags = []string{}
+	}
+	return MessageSummary{
+		ID:             m.ID,
+		Title:          DisplayTitle(m.Title, m.Content, SummaryTitleRunes),
+		Excerpt:        Excerpt(m.Content, SummaryExcerptRunes),
+		ContentChars:   utf8.RuneCountInString(m.Content),
+		Author:         m.Author,
+		EditedBy:       m.EditedBy,
+		Tags:           tags,
+		Priority:       m.Priority,
+		Pinned:         m.Pinned,
+		Version:        m.Version,
+		CreatedAt:      m.CreatedAt,
+		UpdatedAt:      m.UpdatedAt,
+		ArchivedAt:     m.ArchivedAt,
+		ArchivedReason: m.ArchivedReason,
+	}
+}
+
+// Summarize projects a page of messages onto its list representation.
+func Summarize(messages []Message) []MessageSummary {
+	out := make([]MessageSummary, 0, len(messages))
+	for _, m := range messages {
+		out = append(out, m.Summarize())
+	}
+	return out
+}
+
+// DisplayTitle returns the title to show for a message. Untitled notes fall
+// back to the head of their body so a list entry is never blank.
+func DisplayTitle(title, content string, limit int) string {
+	if t := strings.TrimSpace(title); t != "" {
+		return t
+	}
+	flat := strings.TrimSpace(strings.ReplaceAll(content, "\n", " "))
+	return TruncateRunes(flat, limit)
+}
+
+// Excerpt collapses a body onto a single line and bounds its length.
+func Excerpt(content string, limit int) string {
+	return TruncateRunes(strings.Join(strings.Fields(content), " "), limit)
+}
+
+// TruncateRunes cuts s to limit runes, marking an ellipsis when it cut.
+func TruncateRunes(s string, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	if utf8.RuneCountInString(s) <= limit {
+		return s
+	}
+	runes := []rune(s)
+	return string(runes[:limit]) + "…"
 }
 
 type Lock struct {

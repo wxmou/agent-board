@@ -73,6 +73,8 @@ Base URL：`/api/v1`
 | `offset` | 偏移分页 |
 | `cursor` | 上一页的 `next_cursor`（仅 `newest`） |
 
+> REST 列表返回**完整正文**（供 Dashboard 渲染摘要卡片）；MCP 的 `board_list_messages` 返回**摘要**（`title` / `excerpt` / `content_chars`，正文走 `board_get_message`）。两者共用同一查询引擎与分页参数。
+
 响应：
 
 ```json

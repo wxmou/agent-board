@@ -216,8 +216,12 @@ func (s *Server) callTool(ctx context.Context, principal config.Principal, raw j
 			return nil, err
 		}
 		policy, _ := s.store.GetArchivePolicy(ctx)
+		var items any = model.Summarize(result.Items)
+		if includeContent, ok := optionalBool(params.Arguments, "include_content"); ok && includeContent {
+			items = result.Items
+		}
 		return toolOK(map[string]any{
-			"items":       result.Items,
+			"items":       items,
 			"total":       result.Total,
 			"limit":       result.Limit,
 			"offset":      result.Offset,

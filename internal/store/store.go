@@ -358,14 +358,7 @@ func (s *Store) CreateMessage(ctx context.Context, author string, in model.Creat
 }
 
 func displayTitle(title, content string) string {
-	if strings.TrimSpace(title) != "" {
-		return title
-	}
-	r := []rune(strings.TrimSpace(strings.ReplaceAll(content, "\n", " ")))
-	if len(r) > 48 {
-		return string(r[:48]) + "…"
-	}
-	return string(r)
+	return model.DisplayTitle(title, content, 48)
 }
 
 func (s *Store) GetMessage(ctx context.Context, id string) (model.Message, error) {

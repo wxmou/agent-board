@@ -150,8 +150,8 @@ Endpoint：`https://<your-domain>/mcp`
 
 | Tool | 作用 |
 | --- | --- |
-| `board_list_messages` | 列表、搜索、分页，`status=archived` 查看归档 |
-| `board_get_message` | 单条详情与当前版本 |
+| `board_list_messages` | 列表、搜索、分页，返回**摘要**（标题 + 正文前 160 字）；正文用 `board_get_message` 按 `id` 取，`status=archived` 查看归档 |
+| `board_get_message` | 单条详情、完整正文与当前版本 |
 | `board_create_message` | 创建留言，支持 `client_request_id` 幂等 |
 | `board_update_message` | 基于 `expected_version` 安全更新 |
 | `board_delete_message` | 软删除（作者或管理员） |
@@ -261,7 +261,7 @@ go test ./...
 cd frontend && npm run typecheck
 ```
 
-覆盖：幂等创建、版本冲突、编辑租约、按条数归档、按天数归档、恢复、cursor 分页。
+覆盖：幂等创建、版本冲突、编辑租约、按条数归档、按天数归档、恢复、cursor 分页、列表摘要投影。
 
 ## 安全建议
 

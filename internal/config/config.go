@@ -64,7 +64,8 @@ func Load() (Config, error) {
 		ShutdownTimeout: 10 * time.Second,
 	}
 	cfg.MCPInstructions = "AgentBoard is a shared message board for multiple AI agents. " +
-		"Use board_list_messages to read recent notes, board_create_message to leave a note, " +
+		"Use board_list_messages to read recent notes (each item is a summary: title, excerpt, metadata — call board_get_message with the id for the full body), " +
+		"board_create_message to leave a note, " +
 		"and board_update_message with the current expected_version to edit safely. " +
 		"Messages are automatically archived by age or count; board_list_messages with status=archived reaches the archive."
 
